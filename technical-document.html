@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>智维Agent（SmartOpsAgent）技术文档</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif; color: #1f2430; line-height: 1.75; font-size: 11pt; margin: 0; }
+  h1 { font-size: 22pt; margin: 0 0 4px; }
+  h2 { font-size: 14pt; border-left: 4px solid #1f6feb; padding-left: 8px; margin: 28px 0 10px; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 16px 0 6px; page-break-after: avoid; }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0 6px 20px; padding: 0; }
+  li { margin: 3px 0; }
+  code, pre { font-family: Consolas, "Courier New", monospace; }
+  pre { background: #f4f6fa; border: 1px solid #dfe3ea; border-radius: 6px; padding: 10px 12px; font-size: 9pt; line-height: 1.5; white-space: pre-wrap; page-break-inside: avoid; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 9.5pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #ccd3de; padding: 5px 8px; text-align: left; vertical-align: top; }
+  th { background: #eef2f8; }
+  .cover { text-align: center; padding-top: 160px; page-break-after: always; }
+  .cover .sub { color: #5a6472; font-size: 12pt; margin-top: 10px; }
+  .cover .meta { margin-top: 60px; color: #5a6472; font-size: 10.5pt; line-height: 2; }
+  .tag { display: inline-block; border: 1px solid #1f6feb; color: #1f6feb; border-radius: 4px; padding: 0 6px; font-size: 9pt; margin: 2px 2px; }
+  .flow { background: #f4f6fa; border: 1px solid #dfe3ea; border-radius: 6px; padding: 12px; font-family: Consolas, monospace; font-size: 9.5pt; line-height: 1.7; page-break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <h1>智维Agent · SmartOpsAgent</h1>
+  <p class="sub">面向中小企业的可信 AI 智能运维与知识协同平台</p>
+  <p class="sub">技术文档</p>
+  <div class="meta">
+    <p>项目类型：AI Agent + RAG + 智能运维 + 知识协同 + 安全自动化</p>
+    <p>版本：v0.1.0（竞赛交付版）</p>
+    <p>日期：2026-10-24</p>
+  </div>
+</section>
+
+<h2>1. 项目概述</h2>
+<p>智维Agent 面向中小企业运维场景，将大模型能力约束在"证据驱动、风险可控、全程留痕"的闭环内，解决通用问答机器人不可信、不可控、难落地的问题。系统覆盖知识获取 → 知识检索 → 证据验证 → AI 分析 → Agent 规划 → 风险控制 → 安全执行 → 结果验证 → 审计留痕的完整链路。</p>
+<p>
+  <span class="tag">AI Agent</span><span class="tag">RAG 证据验证</span><span class="tag">SSE 流式</span><span class="tag">思考过程可视化</span><span class="tag">多模态</span><span class="tag">风险策略引擎</span><span class="tag">审计留痕</span>
+</p>
+
+<h2>2. 系统架构</h2>
+<table>
+  <tr><th>层</th><th>技术栈</th><th>职责</th></tr>
+  <tr><td>前端</td><td>Vue 3 + Vite + Element Plus + Pinia + ECharts + Three.js（共享逻辑层 TypeScript）</td><td>运维控制台、AI 对话面板（语音/图像证据/流式思考可视化）、3D 与图表可视化</td></tr>
+  <tr><td>后端</td><td>Spring Boot（:8080）</td><td>运维数据、账户与权限、附件会话存储、审计</td></tr>
+  <tr><td>AI 服务</td><td>FastAPI（:8001）</td><td>LLM 网关（可切换 Provider）、对话与 SSE 流式接口、RAG 编排</td></tr>
+  <tr><td>Agent 框架</td><td>Python</td><td>planner（规划）/ executor（执行）/ inspector（核查）/ memory（记忆）/ policies（策略）</td></tr>
+</table>
+<div class="flow">用户提问（文本 / 语音 / 图像证据）
+  → 前端对话面板（Vite /ai 代理）
+  → ai-service：RAG 检索 → 证据验证 → Prompt 组装（系统提示 + 知识证据 + 图像证据）
+  → LLM 网关（mock / Ollama / OpenAI 兼容，可切换 Provider）
+  → SSE 回流：thinking（思考阶段）→ token（流式正文）→ done（引用 + 可信度评分）
+  → 高风险操作：策略引擎评估 → 人工审批 → 执行 → 审计留痕</div>
+
+<h2>3. 核心技术创新</h2>
+<h3>3.1 可信 AI 闭环</h3>
+<p>Agent 不直接执行高风险操作：planner 拆解故障为可执行步骤，policies 策略引擎评估操作风险，高风险动作必须经人工审批；inspector 核查执行结果，全程审计留痕，体现"可信 AI"设计理念。</p>
+<h3>3.2 RAG 证据验证</h3>
+<p>混合检索（关键词 + 语义）结合证据验证机制，知识条目带版本与来源引用；回答附 citations 与 trust_score，显著降低错误版本知识干扰，回答可追溯、可核对。</p>
+<h3>3.3 AI 思考过程可视化 + SSE 流式输出</h3>
+<p>ai-service 的 <code>chat_stream</code> 按"图像证据解析 → 知识检索 → 证据验证 → Agent 规划 → 风险判定 → 生成回答"阶段产出 thinking 事件，前端逐步渲染思考过程并叠加流式 token 光标，将"黑盒回答"变为"透明推理"。</p>
+<h3>3.4 多模态交互</h3>
+<ul>
+  <li><strong>语音输入</strong>：基于 Web Speech API 的渐进增强实现（Chrome/Edge 可用，不支持时自动隐藏入口）；识别文本仅填入输入框，不自动发送、不上传音频。</li>
+  <li><strong>图像证据</strong>：截屏/拍照/图片附件本地暂存，随消息仅将文件名传入 ai-service 参与模拟解析（思考链路出现"图像证据解析"阶段）；图片内容不上传。文本/日志附件走私有附件会话，仅保存证据、不参与模型分析，形成清晰的隐私边界。</li>
+  <li><strong>可视化</strong>：Three.js 3D 拓扑与 ECharts 图表呈现监控与知识分析结果。</li>
+</ul>
+
+<h2>4. 安全与可信设计</h2>
+<ul>
+  <li>权限/风险策略引擎：操作分级，高危命令默认拒绝或转人工审批。</li>
+  <li>人工审批与审计留痕：关键动作全程可追溯。</li>
+  <li>附件隐私设计：普通会话仅传图像文件名；私有附件会话内容不参与模型分析；提示用户遮盖密码、密钥等敏感信息。</li>
+  <li>管理端安全：管理员 MFA、注册安全策略、会话管理。</li>
+</ul>
+
+<h2>5. 工程化与质量</h2>
+<ul>
+  <li><strong>TypeScript 部分改造</strong>：共享逻辑层（api / domain / utils / types，48 个模块）迁移至 TS，组件与 store 保持 JS；<code>npm run typecheck</code>（tsc --noEmit）纳入质量门禁。</li>
+  <li><strong>构建分包</strong>：manualChunks 收敛至共享配置；zrender 从 echarts 拆出（vendor-echarts 510 kB → 346 kB），Three.js 保持懒加载。</li>
+  <li><strong>测试</strong>：Node test runner 共 458 项单元/契约测试全部通过；另附 Playwright 浏览器级附件链路用例。</li>
+  <li><strong>仓库卫生</strong>：本地缓存与运行时数据移出跟踪，跟踪文件 3091 → 1585；README / CHANGELOG / LICENSE / .env.example 齐备。</li>
+</ul>
+<pre>cd frontend
+npm test            # 458 项测试
+npm run typecheck   # tsc --noEmit
+npm run build       # 用户层构建
+npm run build:admin # 管理员层构建</pre>
+
+<h2>6. 运行与演示</h2>
+<pre># 后端（:8080）
+cd backend && ./mvnw spring-boot:run
+# AI 服务（:8001）
+cd ai-service && uvicorn app.main:app --port 8001
+# 前端（开发，/ai 代理至 8001）
+cd frontend && npm run dev</pre>
+<p>演示动线：进入 Agent 对话 → 语音描述故障（如"MySQL 连接数打满"）→ 截取屏幕作为图像证据 → 观察思考过程六阶段与流式回答 → 查看引用证据与可信度评分 → 切换附件会话演示隐私边界。</p>
+
+<h2>7. 路线图</h2>
+<ul>
+  <li>流式多模态增强：图像内容级理解（OCR / 多模态大模型）在隐私授权后接入。</li>
+  <li>端侧推理：Transformers.js / WebGPU 本地小模型，进一步降低数据出域。</li>
+  <li>多节点会话与 MFA 强化、团队协作空间。</li>
+</ul>
+
+</body>
+</html>
